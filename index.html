@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ballon d'Or 2026 — Pronos entre amis</title>
+  <title>Ballon d'Or 2026 — Ligue des 6</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
   <style>
@@ -19,7 +19,7 @@
     <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-2.5">
         <span class="p-2 rounded-lg gold-gradient text-black font-black text-xs">⚽ 2026</span>
-        <h1 class="font-bold text-sm sm:text-base tracking-wide text-amber-300">Ballon d'Or 2026 — Ligue Privée</h1>
+        <h1 class="font-bold text-sm sm:text-base tracking-wide text-amber-300">Ballon d'Or 2026 — Ligue des 6</h1>
       </div>
       <div class="flex items-center gap-2">
         <label class="text-xs text-slate-400 hidden sm:inline">Participant :</label>
@@ -33,15 +33,20 @@
   <main class="max-w-5xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
 
     <!-- Navigation Onglets -->
-    <div class="flex gap-4 border-b border-slate-800 pb-2 text-sm font-semibold">
-      <button onclick="setTab('prono')" id="btnTabProno" class="text-amber-400 border-b-2 border-amber-400 pb-1 flex items-center gap-1.5">
-        <i data-lucide="edit-3" class="w-4 h-4"></i> Mes Pronostics
-      </button>
-      <button onclick="setTab('scores')" id="btnTabScores" class="text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5">
-        <i data-lucide="trophy" class="w-4 h-4"></i> Classement en Direct
-      </button>
-      <button onclick="openAdmin()" class="text-slate-500 hover:text-amber-300 text-xs ml-auto flex items-center gap-1">
-        <i data-lucide="sliders" class="w-3.5 h-3.5"></i> Résultats Officiels
+    <div class="flex items-center justify-between border-b border-slate-800 pb-2 text-sm font-semibold flex-wrap gap-2">
+      <div class="flex gap-4">
+        <button onclick="setTab('prono')" id="btnTabProno" class="text-amber-400 border-b-2 border-amber-400 pb-1 flex items-center gap-1.5">
+          <i data-lucide="edit-3" class="w-4 h-4"></i> Mes Pronostics
+        </button>
+        <button onclick="setTab('scores')" id="btnTabScores" class="text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5">
+          <i data-lucide="trophy" class="w-4 h-4"></i> Classement en Direct
+        </button>
+      </div>
+      
+      <!-- Bouton Admin Direct Cérémonie -->
+      <button onclick="openAdminModal()" class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 text-xs flex items-center gap-1.5 transition">
+        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+        <i data-lucide="sliders" class="w-3.5 h-3.5"></i> Direct Cérémonie (Admin)
       </button>
     </div>
 
@@ -99,6 +104,13 @@
 
     <!-- TAB 2 : LEADERBOARD -->
     <div id="tabScores" class="hidden space-y-4">
+      
+      <!-- État du décompte officiel -->
+      <div id="officialStatusCard" class="bg-slate-900/40 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 flex items-center justify-between">
+        <span>Progression des résultats officiels : <b id="officialCountText" class="text-amber-300">0 / 10 révélés</b></span>
+        <span class="text-[11px] text-slate-500">Recalcul automatique actif</span>
+      </div>
+
       <div class="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
         <table class="w-full text-left text-xs">
           <thead class="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
@@ -117,11 +129,57 @@
 
   </main>
 
+  <!-- MODAL ADMIN DIRECT CÉRÉMONIE (Saisie un par un) -->
+  <div id="adminModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 max-w-lg w-full rounded-2xl p-5 max-h-[90vh] flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <div class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></div>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Direct Cérémonie — Saisie des Résultats</h3>
+        </div>
+        <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <p class="text-xs text-slate-400 my-3">
+        Renseigne les places au fur et à mesure de l'annonce officielle. Les scores de vos 6 amis se recalculent dès que tu cliques sur <b>Appliquer</b>.
+      </p>
+
+      <!-- Liste déroulante des 10 places officielles -->
+      <div class="flex-1 overflow-y-auto space-y-2 pr-2 my-1" id="adminSlotsContainer"></div>
+
+      <!-- Trophées Kopa & Yachine officiels -->
+      <div class="pt-3 border-t border-slate-800 grid grid-cols-2 gap-2 text-xs">
+        <div>
+          <label class="block text-[10px] text-slate-400 mb-1">Lauréat Kopa Officiel :</label>
+          <select id="adminKopaSelect" class="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-slate-200 text-xs outline-none">
+            <option value="">(Non révélé)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] text-slate-400 mb-1">Lauréat Yachine Officiel :</label>
+          <select id="adminYashinSelect" class="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-slate-200 text-xs outline-none">
+            <option value="">(Non révélé)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-800 flex justify-between items-center gap-2">
+        <button onclick="resetOfficialResults()" class="text-xs text-red-400 hover:underline">Réinitialiser tout</button>
+        <div class="flex gap-2">
+          <button onclick="closeAdminModal()" class="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white">Fermer</button>
+          <button onclick="applyOfficialResults()" class="px-4 py-2 bg-amber-400 text-black font-bold text-xs rounded-lg hover:bg-amber-300 transition">
+            Appliquer & Recalculer les scores
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // 1. Les 6 participants
     const USERS = ["Christophe", "Martin", "Nacim", "Louis", "Gwendal", "Jean-Loup"];
 
-    // 2. Les 30 Nommés officiels au Ballon d'Or 2026 (noms uniquement)
+    // 2. Les 30 Nommés officiels au Ballon d'Or 2026
     const NOMINEES = [
       "Jude Bellingham",
       "Pau Cubarsi",
@@ -183,19 +241,15 @@
       "Vozinha"
     ];
 
-    // Variables d'état
+    // Données stockées localement
     let currentUser = localStorage.getItem('bdo_current_user') || USERS[0];
     let allData = JSON.parse(localStorage.getItem('bdo_2026_data') || '{}');
     
-    // Résultats officiels par défaut (simulables via le bouton admin)
+    // Résultats officiels (saisis un par un en direct)
     let officialResults = JSON.parse(localStorage.getItem('bdo_2026_official') || JSON.stringify({
-      top10: [
-        "Vinicius Junior", "Rodri", "Jude Bellingham", "Kylian Mbappé", 
-        "Erling Haaland", "Lamine Yamal", "Harry Kane", "Ousmane Dembélé", 
-        "Vitinha", "Lautaro Martinez"
-      ],
-      kopa: "Lamine Yamal",
-      yashin: "Emiliano Martínez"
+      top10: ["", "", "", "", "", "", "", "", "", ""],
+      kopa: "",
+      yashin: ""
     }));
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -203,6 +257,7 @@
       renderTop10();
       renderNominees();
       updateLeaderboard();
+      renderAdminSlots();
       lucide.createIcons();
     });
 
@@ -220,6 +275,15 @@
       const yashinPicker = document.getElementById('yashinPicker');
       yashinPicker.innerHTML = '<option value="">Sélectionne un gardien...</option>' + 
         YASHIN_NOMINEES.map(y => `<option value="${y}">${y}</option>`).join('');
+
+      // Admin Selects
+      const adminKopa = document.getElementById('adminKopaSelect');
+      adminKopa.innerHTML = '<option value="">(Non révélé)</option>' + 
+        KOPA_NOMINEES.map(k => `<option value="${k}" ${k === officialResults.kopa ? 'selected' : ''}>${k}</option>`).join('');
+
+      const adminYashin = document.getElementById('adminYashinSelect');
+      adminYashin.innerHTML = '<option value="">(Non révélé)</option>' + 
+        YASHIN_NOMINEES.map(y => `<option value="${y}" ${y === officialResults.yashin ? 'selected' : ''}>${y}</option>`).join('');
 
       loadUserTrophies();
     }
@@ -259,7 +323,7 @@
         slot.innerHTML = `
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 flex items-center justify-center font-bold text-[11px] ${i === 0 ? 'text-amber-400 font-black' : 'text-slate-400'}">${i + 1}.</span>
-            <span>${playerName ? `<b>${playerName}</b>` : 'Sélectionne un joueur à droite'}</span>
+            <span>${playerName ? `<b>${playerName}</b>` : 'Emplacement vide'}</span>
           </div>
           ${playerName ? `<button onclick="removePlayer('${playerName}')" class="text-slate-500 hover:text-red-400 p-0.5"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>` : ''}
         `;
@@ -332,12 +396,15 @@
       const tbody = document.getElementById('leaderboardRows');
       tbody.innerHTML = "";
 
+      const revealedCount = officialResults.top10.filter(x => x && x.trim() !== "").length;
+      document.getElementById('officialCountText').textContent = `${revealedCount} / 10 révélés`;
+
       const scores = USERS.map(u => {
         const uData = allData[u] || { top10: [], kopa: "", yashin: "" };
         let points = 0;
         let exact = 0;
 
-        // Calcul Top 10
+        // Calcul Top 10 par rapport aux places déjà révélées
         uData.top10.forEach((player, idx) => {
           const officialIdx = officialResults.top10.indexOf(player);
           if (officialIdx !== -1) {
@@ -350,8 +417,8 @@
 
         // Calcul Bonus Trophées
         let bonus = 0;
-        if (uData.kopa && uData.kopa === officialResults.kopa) bonus += 5;
-        if (uData.yashin && uData.yashin === officialResults.yashin) bonus += 5;
+        if (officialResults.kopa && uData.kopa === officialResults.kopa) bonus += 5;
+        if (officialResults.yashin && uData.yashin === officialResults.yashin) bonus += 5;
 
         return { 
           user: u, 
@@ -384,19 +451,63 @@
       lucide.createIcons();
     }
 
-    function openAdmin() {
-      const currentList = officialResults.top10.join(', ');
-      const input = prompt("Saisis les 10 joueurs du Top 10 officiel séparés par des virgules :", currentList);
-      if (input) {
-        officialResults.top10 = input.split(',').map(s => s.trim());
-        const kopaInput = prompt("Vainqueur officiel Trophée Kopa :", officialResults.kopa);
-        if (kopaInput) officialResults.kopa = kopaInput.trim();
-        const yashinInput = prompt("Vainqueur officiel Trophée Yachine :", officialResults.yashin);
-        if (yashinInput) officialResults.yashin = yashinInput.trim();
+    // GESTION ADMIN DU DIRECT
+    function renderAdminSlots() {
+      const container = document.getElementById('adminSlotsContainer');
+      container.innerHTML = "";
 
+      for (let i = 0; i < 10; i++) {
+        const currentVal = officialResults.top10[i] || "";
+        const div = document.createElement('div');
+        div.className = "flex items-center gap-2 text-xs";
+        div.innerHTML = `
+          <span class="w-8 font-mono font-bold text-slate-400 text-right">#${i + 1} :</span>
+          <select id="admin_slot_${i}" class="flex-1 bg-slate-950 border border-slate-800 rounded p-1.5 text-slate-200 outline-none focus:border-amber-400">
+            <option value="">(Non révélé)</option>
+            ${NOMINEES.map(n => `<option value="${n}" ${n === currentVal ? 'selected' : ''}>${n}</option>`).join('')}
+          </select>
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    function openAdminModal() {
+      renderAdminSlots();
+      document.getElementById('adminKopaSelect').value = officialResults.kopa || "";
+      document.getElementById('adminYashinSelect').value = officialResults.yashin || "";
+      document.getElementById('adminModal').classList.remove('hidden');
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.add('hidden');
+    }
+
+    function applyOfficialResults() {
+      const newTop10 = [];
+      for (let i = 0; i < 10; i++) {
+        const val = document.getElementById(`admin_slot_${i}`).value;
+        newTop10.push(val);
+      }
+      officialResults.top10 = newTop10;
+      officialResults.kopa = document.getElementById('adminKopaSelect').value;
+      officialResults.yashin = document.getElementById('adminYashinSelect').value;
+
+      localStorage.setItem('bdo_2026_official', JSON.stringify(officialResults));
+      updateLeaderboard();
+      closeAdminModal();
+    }
+
+    function resetOfficialResults() {
+      if (confirm("Réinitialiser tous les résultats officiels saisis ?")) {
+        officialResults = {
+          top10: ["", "", "", "", "", "", "", "", "", ""],
+          kopa: "",
+          yashin: ""
+        };
         localStorage.setItem('bdo_2026_official', JSON.stringify(officialResults));
+        renderAdminSlots();
         updateLeaderboard();
-        alert("Résultats officiels mis à jour et points recalculés !");
+        closeAdminModal();
       }
     }
   </script>
