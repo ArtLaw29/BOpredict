@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ballon d'Or 2026 — Pronos entre amis</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    body { background-color: #0b0f19; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .gold-gradient { background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #92400E 100%); }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col selection:bg-amber-400 selection:text-black">
+
+  <header class="border-b border-slate-800 bg-slate-900/70 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <span class="p-2 rounded-lg gold-gradient text-black font-black text-xs">⚽ 2026</span>
+        <h1 class="font-bold text-sm sm:text-base tracking-wide text-amber-300">Ballon d'Or 2026 — Ligue Privée</h1>
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="text-xs text-slate-400 hidden sm:inline">Participant :</label>
+        <select id="userPicker" onchange="selectUser(this.value)" class="bg-slate-950 border border-amber-500/40 text-amber-300 rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none">
+          <!-- Injecté dynamiquement -->
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+    <!-- Navigation Onglets -->
+    <div class="flex gap-4 border-b border-slate-800 pb-2 text-sm font-semibold">
+      <button onclick="setTab('prono')" id="btnTabProno" class="text-amber-400 border-b-2 border-amber-400 pb-1 flex items-center gap-1.5">
+        <i data-lucide="edit-3" class="w-4 h-4"></i> Mes Pronostics
+      </button>
+      <button onclick="setTab('scores')" id="btnTabScores" class="text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5">
+        <i data-lucide="trophy" class="w-4 h-4"></i> Classement en Direct
+      </button>
+      <button onclick="openAdmin()" class="text-slate-500 hover:text-amber-300 text-xs ml-auto flex items-center gap-1">
+        <i data-lucide="sliders" class="w-3.5 h-3.5"></i> Résultats Officiels
+      </button>
+    </div>
+
+    <!-- TAB 1 : SAISIE DES PRONOS -->
+    <div id="tabProno" class="grid grid-cols-1 md:grid-cols-12 gap-6">
+      
+      <!-- Colonne de gauche : Top 10 + Trophées -->
+      <div class="md:col-span-7 space-y-4">
+        <div class="flex justify-between items-center">
+          <p class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Ton Top 10 officiel :</p>
+          <button onclick="clearMyTop10()" class="text-xs text-red-400 hover:underline">Vider la liste</button>
+        </div>
+        
+        <div id="top10List" class="space-y-1.5"></div>
+
+        <!-- Trophées Kopa & Yachine -->
+        <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3 mt-4">
+          <p class="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="medal" class="w-3.5 h-3.5"></i> Questions Bonus (+5 pts chacune)
+          </p>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Trophée Kopa (U21) :</label>
+              <select id="kopaPicker" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 outline-none focus:border-amber-400">
+                <option value="">Sélectionne un joueur...</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Trophée Yachine (Gardien) :</label>
+              <select id="yashinPicker" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 outline-none focus:border-amber-400">
+                <option value="">Sélectionne un gardien...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="savePrediction()" class="w-full py-3 rounded-xl gold-gradient text-black font-bold text-xs uppercase tracking-wider hover:opacity-95 transition shadow-lg shadow-amber-500/10">
+          Enregistrer tous mes pronostics
+        </button>
+      </div>
+
+      <!-- Colonne de droite : Liste des 30 Nommés -->
+      <div class="md:col-span-5 bg-slate-900/40 border border-slate-800 rounded-xl p-3 flex flex-col h-[650px]">
+        <div class="pb-2 border-b border-slate-800 mb-2">
+          <div class="flex justify-between items-center mb-1.5">
+            <span class="text-xs font-bold text-slate-300 uppercase">30 Nommés Ballon d'Or</span>
+            <span id="dispoBadge" class="text-[10px] bg-slate-800 text-amber-300 px-2 py-0.5 rounded-full font-mono"></span>
+          </div>
+          <input type="text" id="searchNominee" oninput="renderNominees(this.value)" placeholder="Filtrer par nom..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400">
+        </div>
+        <div id="nomineesContainer" class="flex-1 overflow-y-auto space-y-1 pr-1"></div>
+      </div>
+    </div>
+
+    <!-- TAB 2 : LEADERBOARD -->
+    <div id="tabScores" class="hidden space-y-4">
+      <div class="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
+            <tr>
+              <th class="p-3.5">Rang</th>
+              <th class="p-3.5">Participant</th>
+              <th class="p-3.5 text-center">Top 10 Exact (+10)</th>
+              <th class="p-3.5 text-center">Bonus Kopa/Yachine</th>
+              <th class="p-3.5 text-right">Points Totaux</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardRows" class="divide-y divide-slate-800"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // 1. Les 6 participants
+    const USERS = ["Christophe", "Alexandre", "Antoine", "Clara", "Thomas", "Victoire"];
+
+    // 2. Les 30 Nommés officiels au Ballon d'Or 2026 (noms uniquement)
+    const NOMINEES = [
+      "Jude Bellingham",
+      "Pau Cubarsi",
+      "Marc Cucurella",
+      "Ousmane Dembélé",
+      "Luis Diaz",
+      "Bruno Fernandes",
+      "Gabriel",
+      "Erling Haaland",
+      "Achraf Hakimi",
+      "Harry Kane",
+      "Khvitcha Kvaratskhelia",
+      "Lamine Yamal",
+      "Sadio Mané",
+      "Marquinhos",
+      "Lautaro Martinez",
+      "Kylian Mbappé",
+      "Nuno Mendes",
+      "Lionel Messi",
+      "Joao Neves",
+      "Michael Olise",
+      "Willian Pacho",
+      "Julian Quinones",
+      "Declan Rice",
+      "Rodri",
+      "Fabian Ruiz",
+      "William Saliba",
+      "Ferran Torres",
+      "Dayot Upamecano",
+      "Vinicius Junior",
+      "Vitinha"
+    ];
+
+    // 3. Les 10 Nommés au Trophée Kopa 2026
+    const KOPA_NOMINEES = [
+      "Kerim Alajbegovic",
+      "Ayyoub Bouaddi",
+      "Pau Cubarsi",
+      "Yan Diomandé",
+      "Lennart Karl",
+      "Éli Junior Kroupi",
+      "Lamine Yamal",
+      "Johan Manzambi",
+      "Ibrahim Maza",
+      "Warren Zaïre-Emery"
+    ];
+
+    // 4. Les 10 Nommés au Trophée Yachine 2026
+    const YASHIN_NOMINEES = [
+      "Yassine Bounou",
+      "Thibaut Courtois",
+      "Joan García",
+      "Gregor Kobel",
+      "Emiliano Martínez",
+      "Édouard Mendy",
+      "David Raya",
+      "Matvey Safonov",
+      "Unai Simón",
+      "Vozinha"
+    ];
+
+    // Variables d'état
+    let currentUser = localStorage.getItem('bdo_current_user') || USERS[0];
+    let allData = JSON.parse(localStorage.getItem('bdo_2026_data') || '{}');
+    
+    // Résultats officiels par défaut (simulables via le bouton admin)
+    let officialResults = JSON.parse(localStorage.getItem('bdo_2026_official') || JSON.stringify({
+      top10: [
+        "Vinicius Junior", "Rodri", "Jude Bellingham", "Kylian Mbappé", 
+        "Erling Haaland", "Lamine Yamal", "Harry Kane", "Ousmane Dembélé", 
+        "Vitinha", "Lautaro Martinez"
+      ],
+      kopa: "Lamine Yamal",
+      yashin: "Emiliano Martínez"
+    }));
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initPickers();
+      renderTop10();
+      renderNominees();
+      updateLeaderboard();
+      lucide.createIcons();
+    });
+
+    function initPickers() {
+      // User Picker
+      const userPicker = document.getElementById('userPicker');
+      userPicker.innerHTML = USERS.map(u => `<option value="${u}" ${u === currentUser ? 'selected' : ''}>${u}</option>`).join('');
+
+      // Kopa Picker
+      const kopaPicker = document.getElementById('kopaPicker');
+      kopaPicker.innerHTML = '<option value="">Sélectionne un joueur...</option>' + 
+        KOPA_NOMINEES.map(k => `<option value="${k}">${k}</option>`).join('');
+
+      // Yashin Picker
+      const yashinPicker = document.getElementById('yashinPicker');
+      yashinPicker.innerHTML = '<option value="">Sélectionne un gardien...</option>' + 
+        YASHIN_NOMINEES.map(y => `<option value="${y}">${y}</option>`).join('');
+
+      loadUserTrophies();
+    }
+
+    function selectUser(user) {
+      currentUser = user;
+      localStorage.setItem('bdo_current_user', currentUser);
+      renderTop10();
+      renderNominees();
+      loadUserTrophies();
+    }
+
+    function getMyData() {
+      if (!allData[currentUser]) {
+        allData[currentUser] = { top10: [], kopa: "", yashin: "" };
+      }
+      return allData[currentUser];
+    }
+
+    function loadUserTrophies() {
+      const myData = getMyData();
+      document.getElementById('kopaPicker').value = myData.kopa || "";
+      document.getElementById('yashinPicker').value = myData.yashin || "";
+    }
+
+    function renderTop10() {
+      const myData = getMyData();
+      const container = document.getElementById('top10List');
+      container.innerHTML = "";
+
+      for (let i = 0; i < 10; i++) {
+        const playerName = myData.top10[i];
+        const slot = document.createElement('div');
+        slot.className = `p-2.5 rounded-lg border flex items-center justify-between text-xs transition ${
+          playerName ? 'bg-slate-900 border-slate-700 text-white' : 'border-dashed border-slate-800 bg-slate-950/40 text-slate-500'
+        }`;
+        slot.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 flex items-center justify-center font-bold text-[11px] ${i === 0 ? 'text-amber-400 font-black' : 'text-slate-400'}">${i + 1}.</span>
+            <span>${playerName ? `<b>${playerName}</b>` : 'Sélectionne un joueur à droite'}</span>
+          </div>
+          ${playerName ? `<button onclick="removePlayer('${playerName}')" class="text-slate-500 hover:text-red-400 p-0.5"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>` : ''}
+        `;
+        container.appendChild(slot);
+      }
+      lucide.createIcons();
+    }
+
+    function renderNominees(filter = "") {
+      const myData = getMyData();
+      const container = document.getElementById('nomineesContainer');
+      container.innerHTML = "";
+
+      const query = filter.toLowerCase();
+      const filtered = NOMINEES.filter(name => name.toLowerCase().includes(query));
+
+      filtered.forEach(name => {
+        const isSelected = myData.top10.includes(name);
+        const div = document.createElement('div');
+        div.className = `p-2 rounded border text-xs flex justify-between items-center cursor-pointer transition ${
+          isSelected 
+            ? 'bg-amber-950/20 border-amber-500/40 text-amber-200 opacity-50 pointer-events-none' 
+            : 'bg-slate-950 border-slate-800 hover:border-slate-600 hover:bg-slate-900'
+        }`;
+        div.onclick = () => addPlayer(name);
+        div.innerHTML = `
+          <span>${name}</span>
+          ${isSelected ? `<span class="text-[10px] font-mono bg-amber-400/20 text-amber-300 px-1.5 rounded">#${myData.top10.indexOf(name) + 1}</span>` : `<span class="text-slate-500">+</span>`}
+        `;
+        container.appendChild(div);
+      });
+
+      document.getElementById('dispoBadge').textContent = `${30 - myData.top10.length} dispo`;
+    }
+
+    function addPlayer(name) {
+      const myData = getMyData();
+      if (myData.top10.length >= 10 || myData.top10.includes(name)) return;
+      myData.top10.push(name);
+      renderTop10();
+      renderNominees(document.getElementById('searchNominee').value);
+    }
+
+    function removePlayer(name) {
+      const myData = getMyData();
+      myData.top10 = myData.top10.filter(n => n !== name);
+      renderTop10();
+      renderNominees(document.getElementById('searchNominee').value);
+    }
+
+    function clearMyTop10() {
+      const myData = getMyData();
+      myData.top10 = [];
+      renderTop10();
+      renderNominees(document.getElementById('searchNominee').value);
+    }
+
+    function savePrediction() {
+      const myData = getMyData();
+      myData.kopa = document.getElementById('kopaPicker').value;
+      myData.yashin = document.getElementById('yashinPicker').value;
+
+      allData[currentUser] = myData;
+      localStorage.setItem('bdo_2026_data', JSON.stringify(allData));
+      updateLeaderboard();
+      alert(`Pronostics enregistrés pour ${currentUser} !`);
+    }
+
+    function updateLeaderboard() {
+      const tbody = document.getElementById('leaderboardRows');
+      tbody.innerHTML = "";
+
+      const scores = USERS.map(u => {
+        const uData = allData[u] || { top10: [], kopa: "", yashin: "" };
+        let points = 0;
+        let exact = 0;
+
+        // Calcul Top 10
+        uData.top10.forEach((player, idx) => {
+          const officialIdx = officialResults.top10.indexOf(player);
+          if (officialIdx !== -1) {
+            const diff = Math.abs(officialIdx - idx);
+            if (diff === 0) { points += 10; exact++; }
+            else if (diff === 1) { points += 5; }
+            else { points += 2; }
+          }
+        });
+
+        // Calcul Bonus Trophées
+        let bonus = 0;
+        if (uData.kopa && uData.kopa === officialResults.kopa) bonus += 5;
+        if (uData.yashin && uData.yashin === officialResults.yashin) bonus += 5;
+
+        return { 
+          user: u, 
+          points: points + bonus, 
+          exact, 
+          bonus,
+          count: uData.top10.length 
+        };
+      }).sort((a, b) => b.points - a.points);
+
+      scores.forEach((s, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = s.user === currentUser ? 'bg-amber-950/20 font-medium' : '';
+        tr.innerHTML = `
+          <td class="p-3.5 font-mono font-bold ${idx === 0 ? 'text-amber-400' : 'text-slate-400'}">#${idx + 1}</td>
+          <td class="p-3.5 font-semibold ${s.user === currentUser ? 'text-amber-300' : ''}">${s.user}</td>
+          <td class="p-3.5 text-center text-slate-300 font-mono">${s.exact} / 10</td>
+          <td class="p-3.5 text-center text-slate-300 font-mono">+${s.bonus} pts</td>
+          <td class="p-3.5 text-right font-mono font-bold text-amber-400 text-sm">${s.points} pts</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function setTab(tab) {
+      document.getElementById('tabProno').classList.toggle('hidden', tab !== 'prono');
+      document.getElementById('tabScores').classList.toggle('hidden', tab !== 'scores');
+      document.getElementById('btnTabProno').className = tab === 'prono' ? 'text-amber-400 border-b-2 border-amber-400 pb-1 flex items-center gap-1.5' : 'text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5';
+      document.getElementById('btnTabScores').className = tab === 'scores' ? 'text-amber-400 border-b-2 border-amber-400 pb-1 flex items-center gap-1.5' : 'text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5';
+      lucide.createIcons();
+    }
+
+    function openAdmin() {
+      const currentList = officialResults.top10.join(', ');
+      const input = prompt("Saisis les 10 joueurs du Top 10 officiel séparés par des virgules :", currentList);
+      if (input) {
+        officialResults.top10 = input.split(',').map(s => s.trim());
+        const kopaInput = prompt("Vainqueur officiel Trophée Kopa :", officialResults.kopa);
+        if (kopaInput) officialResults.kopa = kopaInput.trim();
+        const yashinInput = prompt("Vainqueur officiel Trophée Yachine :", officialResults.yashin);
+        if (yashinInput) officialResults.yashin = yashinInput.trim();
+
+        localStorage.setItem('bdo_2026_official', JSON.stringify(officialResults));
+        updateLeaderboard();
+        alert("Résultats officiels mis à jour et points recalculés !");
+      }
+    }
+  </script>
+</body>
+</html>
