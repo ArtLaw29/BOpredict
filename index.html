@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ballon d'Or 2026 — Ligue des Gougnafiers</title>
+  <title>Ballon d'Or 2026</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
-  <!-- Client officiel Supabase via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { background-color: #0b0f19; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -18,154 +17,180 @@
 </head>
 <body class="text-slate-100 min-h-screen flex flex-col selection:bg-amber-400 selection:text-black">
 
-  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
-    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-2.5">
-        <span class="p-2 rounded-lg gold-gradient text-black font-black text-xs">⚽ BDO</span>
-        <div>
-          <h1 class="font-bold text-sm sm:text-base tracking-wide text-amber-300 leading-tight">Ligue des Gougnafiers</h1>
-          <p class="text-[10px] text-slate-400">Pronostics Ballon d'Or 2026</p>
-        </div>
+  <!-- ÉCRAN DE VERROU / CODE SECRET (affiché seulement si aucun code valide en mémoire ou dans l'URL) -->
+  <div id="gateScreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 max-w-sm w-full rounded-2xl p-6 text-center space-y-4 shadow-2xl">
+      <span class="p-3 inline-block rounded-2xl gold-gradient text-black font-black text-xl">⚽</span>
+      <div>
+        <h2 class="text-base font-bold text-white">Accès à ta Ligue Privée</h2>
+        <p class="text-xs text-slate-400 mt-1">Renseigne le code d'invitation de ton groupe :</p>
       </div>
-
-      <div class="flex items-center gap-2">
-        <label class="text-xs text-slate-400">Qui es-tu ?</label>
-        <select id="userPicker" onchange="switchUser(this.value)" class="bg-slate-950 border border-amber-500/40 text-amber-300 rounded-lg px-2.5 py-1 text-xs font-semibold focus:outline-none cursor-pointer">
-          <!-- Injecté dynamiquement -->
-        </select>
+      <div class="space-y-2">
+        <input type="text" id="gateCodeInput" placeholder="Ex: GOUGNA" class="w-full uppercase text-center tracking-widest font-mono bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-amber-300 font-bold text-sm focus:outline-none focus:border-amber-400">
+        <p id="gateError" class="text-xs text-red-400 hidden">Code invalide. Vérifie avec l'organisateur.</p>
       </div>
-    </div>
-  </header>
-
-  <main class="max-w-5xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
-
-    <!-- Bannière d'état et compte à rebours -->
-    <div id="lockBanner" class="rounded-xl border p-3 text-xs flex items-center justify-between transition-colors bg-slate-900/60 border-slate-800">
-      <div class="flex items-center gap-2">
-        <span id="lockDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-        <span id="lockMessage" class="text-slate-300 font-medium">Chargement de la date limite...</span>
-      </div>
-      <span id="lockCountdown" class="font-mono font-bold text-amber-400 text-xs"></span>
-    </div>
-
-    <!-- Navigation Onglets (3 onglets + bouton Admin) -->
-    <div class="flex items-center justify-between border-b border-slate-800 pb-2 text-sm font-semibold flex-wrap gap-2">
-      <div class="flex gap-3 sm:gap-4 overflow-x-auto pb-1">
-        <button onclick="setTab('prono')" id="btnTabProno" class="text-amber-400 border-b-2 border-amber-400 pb-1 flex items-center gap-1.5 whitespace-nowrap">
-          <i data-lucide="edit-3" class="w-4 h-4"></i> Mes Pronostics
-        </button>
-        <button onclick="setTab('scores')" id="btnTabScores" class="text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5 whitespace-nowrap">
-          <i data-lucide="trophy" class="w-4 h-4"></i> Classement en Direct
-        </button>
-        <button onclick="setTab('picks')" id="btnTabPicks" class="text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5 whitespace-nowrap">
-          <i data-lucide="users" class="w-4 h-4"></i> Pronostics des Gougnafiers
-        </button>
-      </div>
-      
-      <!-- Bouton Admin Direct Cérémonie -->
-      <button id="btnOpenAdmin" onclick="openAdminModal()" class="px-3 py-1.5 rounded-lg border text-xs flex items-center gap-1.5 transition">
-        <!-- Rempli dynamiquement -->
+      <button onclick="submitGateCode()" class="w-full py-2.5 rounded-xl gold-gradient text-black font-bold text-xs uppercase tracking-wider hover:opacity-95 transition">
+        Rejoindre ma ligue
       </button>
     </div>
+  </div>
 
-    <!-- TAB 1 : MES PRONOS -->
-    <div id="tabProno" class="grid grid-cols-1 md:grid-cols-12 gap-6">
-      
-      <div class="md:col-span-7 space-y-4">
-        <div class="flex justify-between items-center">
-          <p class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-            <span>Ton Top 10 officiel</span>
-            <span class="text-[10px] text-slate-500 font-normal lowercase">(glisse ou flèches pour réordonner)</span>
-          </p>
-          <button id="btnClear" onclick="clearMyTop10()" class="text-xs text-red-400 hover:underline">Vider la liste</button>
+  <!-- APPLICATION PRINCIPALE -->
+  <div id="appScreen">
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+      <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <span class="p-2 rounded-lg gold-gradient text-black font-black text-xs">⚽ BDO</span>
+          <div>
+            <h1 id="leagueHeaderTitle" class="font-bold text-sm sm:text-base tracking-wide text-amber-300 leading-tight">Ligue</h1>
+            <p class="text-[10px] text-slate-400" id="leagueSubTitle">Ligue privée</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5 bg-slate-950 border border-amber-500/40 rounded-lg px-2.5 py-1">
+            <label class="text-[11px] text-slate-400 font-medium">Participant :</label>
+            <select id="userPicker" onchange="switchUser(this.value)" class="bg-transparent text-amber-300 text-xs font-semibold focus:outline-none cursor-pointer">
+              <!-- Rempli dynamiquement -->
+            </select>
+          </div>
+          <!-- Bouton pour quitter la ligue et changer de code si besoin -->
+          <button onclick="leaveLeague()" title="Changer de ligue" class="p-1.5 text-slate-500 hover:text-slate-300 rounded-lg bg-slate-950 border border-slate-800">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+      <!-- Bannière de compte à rebours -->
+      <div id="lockBanner" class="rounded-xl border p-3 text-xs flex items-center justify-between transition-colors bg-slate-900/60 border-slate-800">
+        <div class="flex items-center gap-2">
+          <span id="lockDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          <span id="lockMessage" class="text-slate-300 font-medium">Chargement de la date limite...</span>
+        </div>
+        <span id="lockCountdown" class="font-mono font-bold text-amber-400 text-xs"></span>
+      </div>
+
+      <!-- Navigation Onglets -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2 text-sm font-semibold flex-wrap gap-2">
+        <div class="flex gap-3 sm:gap-4 overflow-x-auto pb-1">
+          <button onclick="setTab('prono')" id="btnTabProno" class="text-amber-400 border-b-2 border-amber-400 pb-1 flex items-center gap-1.5 whitespace-nowrap">
+            <i data-lucide="edit-3" class="w-4 h-4"></i> Mes Pronostics
+          </button>
+          <button onclick="setTab('scores')" id="btnTabScores" class="text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5 whitespace-nowrap">
+            <i data-lucide="trophy" class="w-4 h-4"></i> Classement de la Ligue
+          </button>
+          <button onclick="setTab('picks')" id="btnTabPicks" class="text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5 whitespace-nowrap">
+            <i data-lucide="users" class="w-4 h-4"></i> Tous les Bulletins
+          </button>
         </div>
         
-        <div id="top10List" class="space-y-1.5"></div>
+        <button id="btnOpenAdmin" onclick="openAdminModal()" class="px-3 py-1.5 rounded-lg border text-xs flex items-center gap-1.5 transition">
+          <!-- Rempli dynamiquement -->
+        </button>
+      </div>
 
-        <!-- Trophées Kopa & Yachine -->
-        <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3 mt-4">
-          <p class="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-            <i data-lucide="medal" class="w-3.5 h-3.5"></i> Questions Bonus (+5 pts chacune)
-          </p>
+      <!-- TAB 1 : MES PRONOS -->
+      <div id="tabProno" class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        
+        <div class="md:col-span-7 space-y-4">
+          <div class="flex justify-between items-center">
+            <p class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <span>Ton Top 10 officiel</span>
+              <span class="text-[10px] text-slate-500 font-normal lowercase">(glisse ou flèches)</span>
+            </p>
+            <button id="btnClear" onclick="clearMyTop10()" class="text-xs text-red-400 hover:underline">Vider la liste</button>
+          </div>
           
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Trophée Kopa (U21) :</label>
-              <select id="kopaPicker" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 outline-none focus:border-amber-400">
-                <option value="">Sélectionne un joueur...</option>
-              </select>
+          <div id="top10List" class="space-y-1.5"></div>
+
+          <!-- Trophées Kopa & Yachine -->
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3 mt-4">
+            <p class="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="medal" class="w-3.5 h-3.5"></i> Questions Bonus (+5 pts chacune)
+            </p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Trophée Kopa (U21) :</label>
+                <select id="kopaPicker" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 outline-none focus:border-amber-400">
+                  <option value="">Sélectionne un joueur...</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Trophée Yachine (Gardien) :</label>
+                <select id="yashinPicker" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 outline-none focus:border-amber-400">
+                  <option value="">Sélectionne un gardien...</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Trophée Yachine (Gardien) :</label>
-              <select id="yashinPicker" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 outline-none focus:border-amber-400">
-                <option value="">Sélectionne un gardien...</option>
-              </select>
+          </div>
+
+          <button id="btnSave" onclick="savePrediction()" class="w-full py-3 rounded-xl gold-gradient text-black font-bold text-xs uppercase tracking-wider hover:opacity-95 transition shadow-lg shadow-amber-500/10">
+            Enregistrer mon pronostic en ligne
+          </button>
+        </div>
+
+        <!-- Nommés -->
+        <div class="md:col-span-5 bg-slate-900/40 border border-slate-800 rounded-xl p-3 flex flex-col h-[680px]">
+          <div class="pb-2 border-b border-slate-800 mb-2">
+            <div class="flex justify-between items-center mb-1.5">
+              <span class="text-xs font-bold text-slate-300 uppercase">30 Nommés Ballon d'Or</span>
+              <span id="dispoBadge" class="text-[10px] bg-slate-800 text-amber-300 px-2 py-0.5 rounded-full font-mono"></span>
             </div>
+            <input type="text" id="searchNominee" oninput="renderNominees(this.value)" placeholder="Filtrer par nom..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400">
+          </div>
+          <div id="nomineesContainer" class="flex-1 overflow-y-auto space-y-1 pr-1"></div>
+        </div>
+      </div>
+
+      <!-- TAB 2 : CLASSEMENT -->
+      <div id="tabScores" class="hidden space-y-4">
+        <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 flex items-center justify-between">
+          <span>Révélation officielle : <b id="officialCountText" class="text-amber-300">0 / 10 placés</b></span>
+          <button onclick="loadLeagueDataFromSupabase()" class="text-amber-400 hover:underline flex items-center gap-1">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Rafraîchir
+          </button>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
+              <tr>
+                <th class="p-3.5">Rang</th>
+                <th class="p-3.5">Participant</th>
+                <th class="p-3.5 text-center">Top 10 Exact (+10)</th>
+                <th class="p-3.5 text-center">Bonus Kopa/Yachine</th>
+                <th class="p-3.5 text-right">Points Totaux</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardRows" class="divide-y divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 3 : BULLETINS DES MEMBRES -->
+      <div id="tabPicks" class="hidden space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-900/40 border border-slate-800 rounded-xl p-3 text-xs">
+          <div>
+            <span class="font-bold text-slate-200" id="friendsPicksHeader">Bulletins de la ligue</span>
+            <p class="text-slate-400 text-[11px] mt-0.5">Vérifie en direct les prédictions des membres.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-slate-400">Filtrer :</label>
+            <select id="friendViewFilter" onchange="renderFriendsPicks(this.value)" class="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-amber-300 outline-none">
+              <!-- Rempli dynamiquement -->
+            </select>
           </div>
         </div>
 
-        <button id="btnSave" onclick="savePrediction()" class="w-full py-3 rounded-xl gold-gradient text-black font-bold text-xs uppercase tracking-wider hover:opacity-95 transition shadow-lg shadow-amber-500/10">
-          Enregistrer mon pronostic en ligne
-        </button>
+        <div id="friendsPicksContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
       </div>
 
-      <!-- Nommés -->
-      <div class="md:col-span-5 bg-slate-900/40 border border-slate-800 rounded-xl p-3 flex flex-col h-[680px]">
-        <div class="pb-2 border-b border-slate-800 mb-2">
-          <div class="flex justify-between items-center mb-1.5">
-            <span class="text-xs font-bold text-slate-300 uppercase">30 Nommés Ballon d'Or</span>
-            <span id="dispoBadge" class="text-[10px] bg-slate-800 text-amber-300 px-2 py-0.5 rounded-full font-mono"></span>
-          </div>
-          <input type="text" id="searchNominee" oninput="renderNominees(this.value)" placeholder="Filtrer par nom..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400">
-        </div>
-        <div id="nomineesContainer" class="flex-1 overflow-y-auto space-y-1 pr-1"></div>
-      </div>
-    </div>
-
-    <!-- TAB 2 : CLASSEMENT EN DIRECT -->
-    <div id="tabScores" class="hidden space-y-4">
-      <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 flex items-center justify-between">
-        <span>Révélation officielle : <b id="officialCountText" class="text-amber-300">0 / 10 placés</b></span>
-        <button onclick="loadAllDataFromSupabase()" class="text-amber-400 hover:underline flex items-center gap-1">
-          <i data-lucide="refresh-cw" class="w-3 h-3"></i> Rafraîchir les scores
-        </button>
-      </div>
-
-      <div class="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-        <table class="w-full text-left text-xs">
-          <thead class="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
-            <tr>
-              <th class="p-3.5">Rang</th>
-              <th class="p-3.5">Participant</th>
-              <th class="p-3.5 text-center">Top 10 Exact (+10)</th>
-              <th class="p-3.5 text-center">Bonus Kopa/Yachine</th>
-              <th class="p-3.5 text-right">Points Totaux</th>
-            </tr>
-          </thead>
-          <tbody id="leaderboardRows" class="divide-y divide-slate-800"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- TAB 3 : CLASSEMENTS DES AUTRES UTILISATEURS (FEUILLES DE MATCHS) -->
-    <div id="tabPicks" class="hidden space-y-4">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-900/40 border border-slate-800 rounded-xl p-3 text-xs">
-        <div>
-          <span class="font-bold text-slate-200">Bulletins complets des 6 participants</span>
-          <p class="text-slate-400 text-[11px] mt-0.5">Compare les Top 10 et choix bonus de chacun.</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <label class="text-slate-400">Filtrer un ami :</label>
-          <select id="friendViewFilter" onchange="filterFriendsPicks(this.value)" class="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-amber-300 outline-none">
-            <option value="ALL">Tous les Gougnafiers (6)</option>
-          </select>
-        </div>
-      </div>
-
-      <div id="friendsPicksContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-    </div>
-
-  </main>
+    </main>
+  </div>
 
   <!-- MODAL ADMIN DIRECT CÉRÉMONIE -->
   <div id="adminModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -179,7 +204,7 @@
       </div>
 
       <p class="text-xs text-slate-400 my-3">
-        Sélectionne les places au fil de l'annonce officielle. Les scores de tout le monde se recalculeront instantanément en ligne.
+        Sélectionne les places au fil de l'annonce officielle. Les scores de <b>toutes les ligues</b> seront automatiquement recalculés.
       </p>
 
       <div class="flex-1 overflow-y-auto space-y-2 pr-2 my-1" id="adminSlotsContainer"></div>
@@ -213,12 +238,32 @@
 
   <script>
     /* ==========================================================================
-       1. CONFIGURATION, PARTICIPANTS & HORAIRES (EUROPE/PARIS)
+       1. CONFIGURATION DES LIGUES ET LEURS CODES D'ACCÈS SECRETS
        ========================================================================== */
-    const DEADLINE_ISO = "2026-10-26T16:00:00+01:00"; 
-    const ADMIN_UNLOCK_ISO = "2026-10-26T23:00:00+01:00";
+    const LEAGUES = [
+      {
+        id: "gougnafiers",
+        code: "GOUGNA",
+        name: "Ligue des Gougnafiers",
+        members: ["Christophe", "Martin", "Nacim", "Louis", "Gwendal", "Jean-Loup"]
+      },
+      {
+        id: "bureau",
+        code: "BUREAU",
+        name: "Ligue du Bureau",
+        members: ["Christophe", "Antoine", "Clara", "Victoire", "Thomas"]
+      },
+      {
+        id: "famille",
+        code: "FAMILLE",
+        name: "Ligue de Famille",
+        members: ["Christophe", "Papa", "Maman", "Frangin"]
+      }
+    ];
 
-    const USERS = ["Christophe", "Martin", "Nacim", "Louis", "Gwendal", "Jean-Loup"];
+    // Dates limites (Heure de Paris)
+    const DEADLINE_ISO = "2026-10-26T20:00:00+01:00"; 
+    const ADMIN_UNLOCK_ISO = "2026-10-26T23:00:00+01:00";
 
     // 2. IDENTIFIANTS SUPABASE
     const SUPABASE_URL = "https://ygdokukbermqxdwgmxuo.supabase.co";
@@ -226,6 +271,7 @@
 
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // Nommés officiels
     const NOMINEES = [
       "Jude Bellingham", "Pau Cubarsi", "Marc Cucurella", "Ousmane Dembélé",
       "Luis Diaz", "Bruno Fernandes", "Gabriel", "Erling Haaland",
@@ -249,23 +295,114 @@
       "Unai Simón", "Vozinha"
     ];
 
-    let currentUser = localStorage.getItem('bdo_gougna_user') || USERS[0];
-    let allOnlinePredictions = {};
+    let currentLeague = null;
+    let currentUser = null;
+    let leaguePredictions = {};
     let officialResults = { top10: [], kopa: "", yashin: "" };
     let isLocked = false;
     let isAdminUnlocked = false;
     let draggedIndex = null;
 
     window.addEventListener('DOMContentLoaded', async () => {
-      initPickers();
+      resolveLeagueAccess();
+    });
+
+    // GESTION DU CODE SECRET ET DE LA CONNEXION PERSISTANTE
+    function resolveLeagueAccess() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlCode = urlParams.get('code');
+      const savedCode = localStorage.getItem('bdo_authenticated_code');
+
+      const targetCode = (urlCode || savedCode || '').toUpperCase().trim();
+      const matched = LEAGUES.find(l => l.code === targetCode);
+
+      if (matched) {
+        currentLeague = matched;
+        localStorage.setItem('bdo_authenticated_code', matched.code);
+        document.getElementById('gateScreen').classList.add('hidden');
+        bootApp();
+      } else {
+        document.getElementById('gateScreen').classList.remove('hidden');
+      }
+    }
+
+    function submitGateCode() {
+      const inputVal = document.getElementById('gateCodeInput').value.toUpperCase().trim();
+      const matched = LEAGUES.find(l => l.code === inputVal);
+      const err = document.getElementById('gateError');
+
+      if (matched) {
+        err.classList.add('hidden');
+        currentLeague = matched;
+        localStorage.setItem('bdo_authenticated_code', matched.code);
+        document.getElementById('gateScreen').classList.add('hidden');
+        bootApp();
+      } else {
+        err.classList.remove('hidden');
+      }
+    }
+
+    function leaveLeague() {
+      if (confirm("Quitter cette ligue ? Tu devras réutiliser ton lien ou entrer ton code.")) {
+        localStorage.removeItem('bdo_authenticated_code');
+        window.location.href = window.location.pathname;
+      }
+    }
+
+    async function bootApp() {
+      currentUser = localStorage.getItem(`bdo_user_${currentLeague.id}`) || currentLeague.members[0];
+      if (!currentLeague.members.includes(currentUser)) currentUser = currentLeague.members[0];
+
+      initUI();
       checkAllTimers();
       setInterval(checkAllTimers, 1000);
-      await loadAllDataFromSupabase();
+      await loadLeagueDataFromSupabase();
       renderTop10();
       renderNominees();
       renderAdminSlots();
       lucide.createIcons();
-    });
+    }
+
+    function initUI() {
+      document.getElementById('leagueHeaderTitle').textContent = `Ballon d'Or 2026 — ${currentLeague.name}`;
+      document.getElementById('leagueSubTitle').textContent = `${currentLeague.members.length} participants`;
+      document.getElementById('friendsPicksHeader').textContent = `Bulletins — ${currentLeague.name}`;
+
+      const uPicker = document.getElementById('userPicker');
+      uPicker.innerHTML = currentLeague.members.map(u => `<option value="${u}" ${u === currentUser ? 'selected' : ''}>${u}</option>`).join('');
+
+      const fFilter = document.getElementById('friendViewFilter');
+      fFilter.innerHTML = `<option value="ALL">Tous les membres (${currentLeague.members.length})</option>` + 
+        currentLeague.members.map(u => `<option value="${u}">Feuille de ${u}</option>`).join('');
+
+      document.getElementById('kopaPicker').innerHTML = '<option value="">Sélectionne un joueur...</option>' + 
+        KOPA_NOMINEES.map(k => `<option value="${k}">${k}</option>`).join('');
+      document.getElementById('yashinPicker').innerHTML = '<option value="">Sélectionne un gardien...</option>' + 
+        YASHIN_NOMINEES.map(y => `<option value="${y}">${y}</option>`).join('');
+
+      document.getElementById('adminKopaSelect').innerHTML = '<option value="">(Non révélé)</option>' + 
+        KOPA_NOMINEES.map(k => `<option value="${k}">${k}</option>`).join('');
+      document.getElementById('adminYashinSelect').innerHTML = '<option value="">(Non révélé)</option>' + 
+        YASHIN_NOMINEES.map(y => `<option value="${y}">${y}</option>`).join('');
+    }
+
+    function switchUser(user) {
+      currentUser = user;
+      localStorage.setItem(`bdo_user_${currentLeague.id}`, currentUser);
+      renderTop10();
+      renderNominees();
+      loadUserTrophies();
+    }
+
+    function getMyData() {
+      return leaguePredictions[currentUser] || { top10: [], kopa: "", yashin: "" };
+    }
+
+    function loadUserTrophies() {
+      const myData = getMyData();
+      document.getElementById('kopaPicker').value = myData.kopa || "";
+      document.getElementById('yashinPicker').value = myData.yashin || "";
+    }
 
     function checkAllTimers() {
       const now = new Date();
@@ -321,51 +458,18 @@
       lucide.createIcons();
     }
 
-    function initPickers() {
-      const userPicker = document.getElementById('userPicker');
-      userPicker.innerHTML = USERS.map(u => `<option value="${u}" ${u === currentUser ? 'selected' : ''}>${u}</option>`).join('');
-
-      const friendFilter = document.getElementById('friendViewFilter');
-      friendFilter.innerHTML = '<option value="ALL">Tous les Gougnafiers (6)</option>' + 
-        USERS.map(u => `<option value="${u}">Feuille de ${u}</option>`).join('');
-
-      document.getElementById('kopaPicker').innerHTML = '<option value="">Sélectionne un joueur...</option>' + 
-        KOPA_NOMINEES.map(k => `<option value="${k}">${k}</option>`).join('');
-      document.getElementById('yashinPicker').innerHTML = '<option value="">Sélectionne un gardien...</option>' + 
-        YASHIN_NOMINEES.map(y => `<option value="${y}">${y}</option>`).join('');
-
-      document.getElementById('adminKopaSelect').innerHTML = '<option value="">(Non révélé)</option>' + 
-        KOPA_NOMINEES.map(k => `<option value="${k}">${k}</option>`).join('');
-      document.getElementById('adminYashinSelect').innerHTML = '<option value="">(Non révélé)</option>' + 
-        YASHIN_NOMINEES.map(y => `<option value="${y}">${y}</option>`).join('');
-    }
-
-    function switchUser(user) {
-      currentUser = user;
-      localStorage.setItem('bdo_gougna_user', currentUser);
-      renderTop10();
-      renderNominees();
-      loadUserTrophies();
-    }
-
-    function getMyData() {
-      return allOnlinePredictions[currentUser] || { top10: [], kopa: "", yashin: "" };
-    }
-
-    function loadUserTrophies() {
-      const myData = getMyData();
-      document.getElementById('kopaPicker').value = myData.kopa || "";
-      document.getElementById('yashinPicker').value = myData.yashin || "";
-    }
-
-    async function loadAllDataFromSupabase() {
+    // CHARGEMENT SUPABASE FILTRÉ PAR LIGUE
+    async function loadLeagueDataFromSupabase() {
       try {
-        const { data: preds, error: pErr } = await db.from('bdo_gougnafiers_predictions').select('*');
+        const { data: preds, error: pErr } = await db.from('bdo_predictions')
+          .select('*')
+          .eq('league_id', currentLeague.id);
+        
         if (pErr) throw pErr;
 
-        allOnlinePredictions = {};
+        leaguePredictions = {};
         (preds || []).forEach(r => {
-          allOnlinePredictions[r.username] = {
+          leaguePredictions[r.username] = {
             top10: r.top10 || [],
             kopa: r.kopa || "",
             yashin: r.yashin || ""
@@ -389,13 +493,13 @@
         updateLeaderboard();
         renderFriendsPicks();
       } catch (err) {
-        console.error("Erreur Supabase:", err);
+        console.error("Erreur de synchronisation Supabase:", err);
       }
     }
 
     async function savePrediction() {
       if (isLocked) {
-        alert("Les pronostics sont verrouillés ! Impossible de modifier.");
+        alert("Les pronostics sont verrouillés !");
         return;
       }
 
@@ -410,9 +514,10 @@
 
       const saveBtn = document.getElementById('btnSave');
       saveBtn.disabled = true;
-      saveBtn.textContent = "Enregistrement en cours...";
+      saveBtn.textContent = "Enregistrement...";
 
-      const { error } = await db.from('bdo_gougnafiers_predictions').upsert({
+      const { error } = await db.from('bdo_predictions').upsert({
+        league_id: currentLeague.id,
         username: currentUser,
         top10: myData.top10,
         kopa: myData.kopa,
@@ -426,8 +531,8 @@
       if (error) {
         alert("Erreur : " + error.message);
       } else {
-        alert(`Pronostic de ${currentUser} sauvegardé en ligne !`);
-        await loadAllDataFromSupabase();
+        alert(`Pronostic de ${currentUser} sauvegardé avec succès !`);
+        await loadLeagueDataFromSupabase();
       }
     }
 
@@ -568,8 +673,8 @@
 
     function addPlayer(name) {
       if (isLocked) return;
-      if (!allOnlinePredictions[currentUser]) allOnlinePredictions[currentUser] = { top10: [], kopa: "", yashin: "" };
-      const myData = allOnlinePredictions[currentUser];
+      if (!leaguePredictions[currentUser]) leaguePredictions[currentUser] = { top10: [], kopa: "", yashin: "" };
+      const myData = leaguePredictions[currentUser];
       if (myData.top10.length >= 10 || myData.top10.includes(name)) return;
       myData.top10.push(name);
       renderTop10();
@@ -601,8 +706,8 @@
       const revealedCount = (officialResults.top10 || []).filter(x => x && x.trim() !== "").length;
       document.getElementById('officialCountText').textContent = `${revealedCount} / 10 placés`;
 
-      const scores = USERS.map(u => {
-        const uData = allOnlinePredictions[u] || { top10: [], kopa: "", yashin: "" };
+      const scores = currentLeague.members.map(u => {
+        const uData = leaguePredictions[u] || { top10: [], kopa: "", yashin: "" };
         let points = 0;
         let exact = 0;
 
@@ -645,21 +750,14 @@
       });
     }
 
-    /* ==========================================================================
-       NOUVEL ONGLET : BULLETINS & CLASSEMENTS DES AUTRES MEMBRES
-       ========================================================================== */
-    function filterFriendsPicks(selectedFilter) {
-      renderFriendsPicks(selectedFilter);
-    }
-
     function renderFriendsPicks(filterUser = "ALL") {
       const container = document.getElementById('friendsPicksContainer');
       container.innerHTML = "";
 
-      const usersToRender = filterUser === "ALL" ? USERS : [filterUser];
+      const usersToRender = filterUser === "ALL" ? currentLeague.members : [filterUser];
 
       usersToRender.forEach(user => {
-        const data = allOnlinePredictions[user] || { top10: [], kopa: "", yashin: "" };
+        const data = leaguePredictions[user] || { top10: [], kopa: "", yashin: "" };
         const card = document.createElement('div');
         const isMe = user === currentUser;
         card.className = `bg-slate-900/60 border ${isMe ? 'border-amber-500/40' : 'border-slate-800'} rounded-xl p-4 text-xs space-y-3 shadow-lg`;
@@ -731,7 +829,6 @@
       lucide.createIcons();
     }
 
-    // GESTION ADMIN DU DIRECT
     function renderAdminSlots() {
       const container = document.getElementById('adminSlotsContainer');
       container.innerHTML = "";
@@ -795,9 +892,9 @@
       if (error) {
         alert("Erreur de publication : " + error.message);
       } else {
-        alert("Résultats officiels publiés et scores recalculés !");
+        alert("Résultats officiels publiés ! Toutes les ligues ont été recalculées.");
         closeAdminModal();
-        await loadAllDataFromSupabase();
+        await loadLeagueDataFromSupabase();
       }
     }
 
@@ -814,7 +911,7 @@
         });
         renderAdminSlots();
         closeAdminModal();
-        await loadAllDataFromSupabase();
+        await loadLeagueDataFromSupabase();
       }
     }
   </script>
