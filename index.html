@@ -26,7 +26,7 @@
         <p class="text-xs text-slate-400 mt-1">Renseigne le code d'invitation de ton groupe :</p>
       </div>
       <div class="space-y-2">
-        <input type="text" id="gateCodeInput" placeholder="Ex: GOUGNA" class="w-full uppercase text-center tracking-widest font-mono bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-amber-300 font-bold text-sm focus:outline-none focus:border-amber-400">
+        <input type="text" id="gateCodeInput" placeholder="Ex: PSG" class="w-full uppercase text-center tracking-widest font-mono bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-amber-300 font-bold text-sm focus:outline-none focus:border-amber-400">
         <p id="gateError" class="text-xs text-red-400 hidden">Code invalide. Vérifie avec l'organisateur.</p>
       </div>
       <button onclick="submitGateCode()" class="w-full py-2.5 rounded-xl gold-gradient text-black font-bold text-xs uppercase tracking-wider hover:opacity-95 transition">
@@ -243,21 +243,21 @@
     const LEAGUES = [
       {
         id: "gougnafiers",
-        code: "GOUGNA",
+        code: "GOUGNAFIERS",
         name: "Ligue des Gougnafiers",
         members: ["Christophe", "Martin", "Nacim", "Louis", "Gwendal", "Jean-Loup"]
       },
       {
-        id: "bureau",
-        code: "BUREAU",
-        name: "Ligue du Bureau",
-        members: ["Christophe", "Antoine", "Clara", "Victoire", "Thomas"]
+        id: "DJ",
+        code: "DJ",
+        name: "Ligue de la DJ",
+        members: ["Christophe", "Mathilde", "Gautier", "Darrell", "Louis", "Guillaume", "Antoine", "Julia"]
       },
       {
-        id: "famille",
-        code: "FAMILLE",
-        name: "Ligue de Famille",
-        members: ["Christophe", "Papa", "Maman", "Frangin"]
+        id: "GoodBoyPaul",
+        code: "Paul",
+        name: "Ligue de Good Boy Paul",
+        members: ["Christophe", "Paul", "Samory", "Nicolas", "Etienne", "James-Marie"]
       }
     ];
 
