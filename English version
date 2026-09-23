@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ballon d'Or 2026 — Predictor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { background-color: #0b0f19; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .gold-gradient { background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #92400E 100%); }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    .drag-over { border-color: #f59e0b !important; background-color: rgba(245, 158, 11, 0.1) !important; }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col selection:bg-amber-400 selection:text-black">
+
+  <!-- PASSCODE GATE SCREEN -->
+  <div id="gateScreen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 max-w-sm w-full rounded-2xl p-6 text-center space-y-4 shadow-2xl">
+      <span class="p-3 inline-block rounded-2xl gold-gradient text-black font-black text-xl">⚽</span>
+      <div>
+        <h2 class="text-base font-bold text-white">Join Your Private League</h2>
+        <p class="text-xs text-slate-400 mt-1">Enter your group's invite code:</p>
+      </div>
+      <div class="space-y-2">
+        <input type="text" id="gateCodeInput" placeholder="E.g.: DELAWARE" class="w-full uppercase text-center tracking-widest font-mono bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-amber-300 font-bold text-sm focus:outline-none focus:border-amber-400">
+        <p id="gateError" class="text-xs text-red-400 hidden">Invalid code. Please check with your league admin.</p>
+      </div>
+      <button onclick="submitGateCode()" class="w-full py-2.5 rounded-xl gold-gradient text-black font-bold text-xs uppercase tracking-wider hover:opacity-95 transition">
+        Enter League
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="appScreen">
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+      <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <span class="p-2 rounded-lg gold-gradient text-black font-black text-xs">⚽ BDO</span>
+          <div>
+            <h1 id="leagueHeaderTitle" class="font-bold text-sm sm:text-base tracking-wide text-amber-300 leading-tight">League</h1>
+            <p class="text-[10px] text-slate-400" id="leagueSubTitle">Private League</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5 bg-slate-950 border border-amber-500/40 rounded-lg px-2.5 py-1">
+            <label class="text-[11px] text-slate-400 font-medium">Participant:</label>
+            <select id="userPicker" onchange="switchUser(this.value)" class="bg-transparent text-amber-300 text-xs font-semibold focus:outline-none cursor-pointer">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <button onclick="leaveLeague()" title="Switch league" class="p-1.5 text-slate-500 hover:text-slate-300 rounded-lg bg-slate-950 border border-slate-800">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+      <!-- RULES & ONBOARDING BANNER -->
+      <section class="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/20 p-4 sm:p-5 shadow-xl relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div class="flex items-start justify-between gap-3 border-b border-slate-800/80 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">🏆</span>
+            <div>
+              <h2 class="text-sm sm:text-base font-black text-amber-300 tracking-wide uppercase">Ballon d'Or 2026 Challenge</h2>
+              <p class="text-[11px] text-slate-400">Show your friends who has the sharpest football knowledge.</p>
+            </div>
+          </div>
+          <span class="text-[10px] font-mono uppercase bg-amber-400/10 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full whitespace-nowrap">
+            Official Rules
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3">
+          <!-- Step 1 -->
+          <div class="bg-slate-950/50 border border-slate-800/60 rounded-xl p-3 space-y-1">
+            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-200">
+              <span class="w-4 h-4 rounded-full bg-amber-400 text-black flex items-center justify-center font-black text-[10px]">1</span>
+              Select Your Profile
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">
+              Choose your name in the dropdown <b class="text-amber-300">at the top right</b>. This acts as your official ballot for the league.
+            </p>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="bg-slate-950/50 border border-slate-800/60 rounded-xl p-3 space-y-1">
+            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-200">
+              <span class="w-4 h-4 rounded-full bg-amber-400 text-black flex items-center justify-center font-black text-[10px]">2</span>
+              Rank Your Top 10
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">
+              Predict the final standings from 1st to 10th place, then pick your winners for the <b>Kopa</b> and <b>Yashin</b> trophies.
+            </p>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="bg-slate-950/50 border border-slate-800/60 rounded-xl p-3 space-y-1.5">
+            <div class="flex items-center gap-1.5 text-xs font-bold text-amber-300">
+              <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i>
+              Scoring System
+            </div>
+            <ul class="text-[11px] text-slate-300 space-y-1 font-mono">
+              <li class="flex justify-between items-center"><span>Exact position:</span> <b class="text-emerald-400">+10 pts</b></li>
+              <li class="flex justify-between items-center"><span>1 rank off:</span> <b class="text-amber-300">+5 pts</b></li>
+              <li class="flex justify-between items-center"><span>Inside Top 10:</span> <b class="text-slate-400">+2 pts</b></li>
+              <li class="flex justify-between items-center"><span>Kopa / Yashin bonus:</span> <b class="text-amber-400">+5 pts each</b></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
+          <span>💡 Drag and drop or use the arrows to reorder players before hitting <b class="text-slate-300">Save Prediction</b>.</span>
+        </div>
+      </section>
+
+      <!-- LOCK BANNER -->
+      <div id="lockBanner" class="rounded-xl border p-3 text-xs flex items-center justify-between transition-colors bg-slate-900/60 border-slate-800">
+        <div class="flex items-center gap-2">
+          <span id="lockDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          <span id="lockMessage" class="text-slate-300 font-medium">Checking deadline...</span>
+        </div>
+        <span id="lockCountdown" class="font-mono font-bold text-amber-400 text-xs"></span>
+      </div>
+
+      <!-- TABS -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2 text-sm font-semibold flex-wrap gap-2">
+        <div class="flex gap-3 sm:gap-4 overflow-x-auto pb-1">
+          <button onclick="setTab('prono')" id="btnTabProno" class="text-amber-400 border-b-2 border-amber-400 pb-1 flex items-center gap-1.5 whitespace-nowrap">
+            <i data-lucide="edit-3" class="w-4 h-4"></i> My Predictions
+          </button>
+          <button onclick="setTab('scores')" id="btnTabScores" class="text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5 whitespace-nowrap">
+            <i data-lucide="trophy" class="w-4 h-4"></i> League Standings
+          </button>
+          <button onclick="setTab('picks')" id="btnTabPicks" class="text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5 whitespace-nowrap">
+            <i data-lucide="users" class="w-4 h-4"></i> League Ballots
+          </button>
+        </div>
+        
+        <button id="btnOpenAdmin" onclick="openAdminModal()" class="px-3 py-1.5 rounded-lg border text-xs flex items-center gap-1.5 transition">
+          <!-- Populated dynamically -->
+        </button>
+      </div>
+
+      <!-- TAB 1 : MY PICKS -->
+      <div id="tabProno" class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        
+        <div class="md:col-span-7 space-y-4">
+          <div class="flex justify-between items-center">
+            <p class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <span>Your Official Top 10</span>
+              <span class="text-[10px] text-slate-500 font-normal lowercase">(drag or use arrows)</span>
+            </p>
+            <button id="btnClear" onclick="clearMyTop10()" class="text-xs text-red-400 hover:underline">Clear list</button>
+          </div>
+          
+          <div id="top10List" class="space-y-1.5"></div>
+
+          <!-- Bonus Questions -->
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3 mt-4">
+            <p class="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="medal" class="w-3.5 h-3.5"></i> Bonus Trophies (+5 pts each)
+            </p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Kopa Trophy (U21):</label>
+                <select id="kopaPicker" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 outline-none focus:border-amber-400">
+                  <option value="">Select a player...</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Yashin Trophy (Goalkeeper):</label>
+                <select id="yashinPicker" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 outline-none focus:border-amber-400">
+                  <option value="">Select a goalkeeper...</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <button id="btnSave" onclick="savePrediction()" class="w-full py-3 rounded-xl gold-gradient text-black font-bold text-xs uppercase tracking-wider hover:opacity-95 transition shadow-lg shadow-amber-500/10">
+            Save My Prediction Online
+          </button>
+        </div>
+
+        <!-- Nominees List -->
+        <div class="md:col-span-5 bg-slate-900/40 border border-slate-800 rounded-xl p-3 flex flex-col h-[680px]">
+          <div class="pb-2 border-b border-slate-800 mb-2">
+            <div class="flex justify-between items-center mb-1.5">
+              <span class="text-xs font-bold text-slate-300 uppercase">30 Ballon d'Or Nominees</span>
+              <span id="dispoBadge" class="text-[10px] bg-slate-800 text-amber-300 px-2 py-0.5 rounded-full font-mono"></span>
+            </div>
+            <input type="text" id="searchNominee" oninput="renderNominees(this.value)" placeholder="Filter by name..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400">
+          </div>
+          <div id="nomineesContainer" class="flex-1 overflow-y-auto space-y-1 pr-1"></div>
+        </div>
+      </div>
+
+      <!-- TAB 2 : STANDINGS -->
+      <div id="tabScores" class="hidden space-y-4">
+        <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 flex items-center justify-between">
+          <span>Official ceremony progress: <b id="officialCountText" class="text-amber-300">0 / 10 revealed</b></span>
+          <button onclick="loadLeagueDataFromSupabase()" class="text-amber-400 hover:underline flex items-center gap-1">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+          </button>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
+              <tr>
+                <th class="p-3.5">Rank</th>
+                <th class="p-3.5">Participant</th>
+                <th class="p-3.5 text-center">Exact Picks (+10)</th>
+                <th class="p-3.5 text-center">Trophy Bonuses</th>
+                <th class="p-3.5 text-right">Total Points</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardRows" class="divide-y divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 3 : LEAGUE BALLOTS -->
+      <div id="tabPicks" class="hidden space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-900/40 border border-slate-800 rounded-xl p-3 text-xs">
+          <div>
+            <span class="font-bold text-slate-200" id="friendsPicksHeader">League Ballots</span>
+            <p class="text-slate-400 text-[11px] mt-0.5">Check and compare all member picks transparently.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-slate-400">Filter:</label>
+            <select id="friendViewFilter" onchange="renderFriendsPicks(this.value)" class="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-amber-300 outline-none">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+        </div>
+
+        <div id="friendsPicksContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ADMIN CEREMONY MODAL -->
+  <div id="adminModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 max-w-lg w-full rounded-2xl p-5 max-h-[90vh] flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <div class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></div>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Live Ceremony — Official Entry</h3>
+        </div>
+        <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <p class="text-xs text-slate-400 my-3">
+        Fill in each position as announced during the live broadcast. Scores for <b>all leagues</b> will recalculate instantly.
+      </p>
+
+      <div class="flex-1 overflow-y-auto space-y-2 pr-2 my-1" id="adminSlotsContainer"></div>
+
+      <div class="pt-3 border-t border-slate-800 grid grid-cols-2 gap-2 text-xs">
+        <div>
+          <label class="block text-[10px] text-slate-400 mb-1">Official Kopa Winner:</label>
+          <select id="adminKopaSelect" class="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-slate-200 text-xs outline-none">
+            <option value="">(Not yet announced)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] text-slate-400 mb-1">Official Yashin Winner:</label>
+          <select id="adminYashinSelect" class="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-slate-200 text-xs outline-none">
+            <option value="">(Not yet announced)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-800 flex justify-between items-center gap-2">
+        <button onclick="resetOfficialResults()" class="text-xs text-red-400 hover:underline">Reset All</button>
+        <div class="flex gap-2">
+          <button onclick="closeAdminModal()" class="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white">Close</button>
+          <button onclick="applyOfficialResults()" class="px-4 py-2 bg-amber-400 text-black font-bold text-xs rounded-lg hover:bg-amber-300 transition">
+            Publish & Recalculate
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. LEAGUE CONFIGURATION & PASSCODES
+       ========================================================================== */
+    const LEAGUES = [
+      {
+        id: "gougnafiers",
+        code: "GOUGNAFIERS",
+        name: "Ligue des Gougnafiers",
+        members: ["Christophe", "Martin", "Nacim", "Louis", "Gwendal", "Jean-Loup"]
+      },
+      {
+        id: "DJ Gang",
+        code: "DJ GANG",
+        name: "DJ Gang",
+        members: ["Christophe", "Mathilde", "Gautier", "Darrell", "Louis", "Guillaume", "Antoine", "Julia"]
+      },
+      {
+        id: "GoodBoyPaul",
+        code: "PAUL",
+        name: "Ligue de Good Boy Paul",
+        members: ["Christophe", "Paul", "Samory", "Nicolas", "Etienne", "James-Marie"]
+      },
+      {
+        id: "Petits de la DJ",
+        code: "DJ",
+        name: "Ligue des Petits de la DJ",
+        members: ["Anaïs", "Christophe", "Darrell", "Julia", "Louis", "Magnificat", "Martin", "Mathilde", "Romain", "Sabrina", "Sami"]
+      },
+      {
+        id: "Delaware",
+        code: "DELAWARE",
+        name: "Delaware",
+        members: ["Andrea", "Paolo", "Christophe"]
+      }
+    ];
+
+    // Deadlines (Paris / Central European Time)
+    const DEADLINE_ISO = "2026-10-26T20:00:00+01:00"; 
+    const ADMIN_UNLOCK_ISO = "2026-10-26T23:00:00+01:00";
+
+    // 2. SUPABASE CREDENTIALS
+    const SUPABASE_URL = "https://ygdokukbermqxdwgmxuo.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnZG9rdWtiZXJtcXhkd2dteHVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxNDczOTcsImV4cCI6MjEwNDcyMzM5N30.288JpjYxiMGGvDhyQvqoPx8PIvt39xAvnP2buznvTR8";
+
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Official Nominees
+    const NOMINEES = [
+      "Jude Bellingham", "Pau Cubarsi", "Marc Cucurella", "Ousmane Dembélé",
+      "Luis Diaz", "Bruno Fernandes", "Gabriel", "Erling Haaland",
+      "Achraf Hakimi", "Harry Kane", "Khvitcha Kvaratskhelia", "Lamine Yamal",
+      "Sadio Mané", "Marquinhos", "Lautaro Martinez", "Kylian Mbappé",
+      "Nuno Mendes", "Lionel Messi", "Joao Neves", "Michael Olise",
+      "Willian Pacho", "Julian Quinones", "Declan Rice", "Rodri",
+      "Fabian Ruiz", "William Saliba", "Ferran Torres", "Dayot Upamecano",
+      "Vinicius Junior", "Vitinha"
+    ];
+
+    const KOPA_NOMINEES = [
+      "Kerim Alajbegovic", "Ayyoub Bouaddi", "Pau Cubarsi", "Yan Diomandé",
+      "Lennart Karl", "Éli Junior Kroupi", "Lamine Yamal", "Johan Manzambi",
+      "Ibrahim Maza", "Warren Zaïre-Emery"
+    ];
+
+    const YASHIN_NOMINEES = [
+      "Yassine Bounou", "Thibaut Courtois", "Joan García", "Gregor Kobel",
+      "Emiliano Martínez", "Édouard Mendy", "David Raya", "Matvey Safonov",
+      "Unai Simón", "Vozinha"
+    ];
+
+    let currentLeague = null;
+    let currentUser = null;
+    let leaguePredictions = {};
+    let officialResults = { top10: [], kopa: "", yashin: "" };
+    let isLocked = false;
+    let isAdminUnlocked = false;
+    let draggedIndex = null;
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      resolveLeagueAccess();
+    });
+
+    function resolveLeagueAccess() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlCode = urlParams.get('code');
+      const savedCode = localStorage.getItem('bdo_authenticated_code');
+
+      const targetCode = (urlCode || savedCode || '').toUpperCase().trim();
+      const matched = LEAGUES.find(l => l.code === targetCode);
+
+      if (matched) {
+        currentLeague = matched;
+        localStorage.setItem('bdo_authenticated_code', matched.code);
+        document.getElementById('gateScreen').classList.add('hidden');
+        bootApp();
+      } else {
+        document.getElementById('gateScreen').classList.remove('hidden');
+      }
+    }
+
+    function submitGateCode() {
+      const inputVal = document.getElementById('gateCodeInput').value.toUpperCase().trim();
+      const matched = LEAGUES.find(l => l.code === inputVal);
+      const err = document.getElementById('gateError');
+
+      if (matched) {
+        err.classList.add('hidden');
+        currentLeague = matched;
+        localStorage.setItem('bdo_authenticated_code', matched.code);
+        document.getElementById('gateScreen').classList.add('hidden');
+        bootApp();
+      } else {
+        err.classList.remove('hidden');
+      }
+    }
+
+    function leaveLeague() {
+      if (confirm("Leave this league? You will need your invite link or code to sign back in.")) {
+        localStorage.removeItem('bdo_authenticated_code');
+        window.location.href = window.location.pathname;
+      }
+    }
+
+    async function bootApp() {
+      currentUser = localStorage.getItem(`bdo_user_${currentLeague.id}`) || currentLeague.members[0];
+      if (!currentLeague.members.includes(currentUser)) currentUser = currentLeague.members[0];
+
+      initUI();
+      checkAllTimers();
+      setInterval(checkAllTimers, 1000);
+      await loadLeagueDataFromSupabase();
+      renderTop10();
+      renderNominees();
+      renderAdminSlots();
+      lucide.createIcons();
+    }
+
+    function initUI() {
+      document.getElementById('leagueHeaderTitle').textContent = `Ballon d'Or 2026 — ${currentLeague.name}`;
+      document.getElementById('leagueSubTitle').textContent = `${currentLeague.members.length} participants`;
+      document.getElementById('friendsPicksHeader').textContent = `Ballots — ${currentLeague.name}`;
+
+      const uPicker = document.getElementById('userPicker');
+      uPicker.innerHTML = currentLeague.members.map(u => `<option value="${u}" ${u === currentUser ? 'selected' : ''}>${u}</option>`).join('');
+
+      const fFilter = document.getElementById('friendViewFilter');
+      fFilter.innerHTML = `<option value="ALL">All members (${currentLeague.members.length})</option>` + 
+        currentLeague.members.map(u => `<option value="${u}">${u}'s ballot</option>`).join('');
+
+      document.getElementById('kopaPicker').innerHTML = '<option value="">Select a player...</option>' + 
+        KOPA_NOMINEES.map(k => `<option value="${k}">${k}</option>`).join('');
+      document.getElementById('yashinPicker').innerHTML = '<option value="">Select a goalkeeper...</option>' + 
+        YASHIN_NOMINEES.map(y => `<option value="${y}">${y}</option>`).join('');
+
+      document.getElementById('adminKopaSelect').innerHTML = '<option value="">(Not yet announced)</option>' + 
+        KOPA_NOMINEES.map(k => `<option value="${k}">${k}</option>`).join('');
+      document.getElementById('adminYashinSelect').innerHTML = '<option value="">(Not yet announced)</option>' + 
+        YASHIN_NOMINEES.map(y => `<option value="${y}">${y}</option>`).join('');
+    }
+
+    function switchUser(user) {
+      currentUser = user;
+      localStorage.setItem(`bdo_user_${currentLeague.id}`, currentUser);
+      renderTop10();
+      renderNominees();
+      loadUserTrophies();
+    }
+
+    function getMyData() {
+      return leaguePredictions[currentUser] || { top10: [], kopa: "", yashin: "" };
+    }
+
+    function loadUserTrophies() {
+      const myData = getMyData();
+      document.getElementById('kopaPicker').value = myData.kopa || "";
+      document.getElementById('yashinPicker').value = myData.yashin || "";
+    }
+
+    function checkAllTimers() {
+      const now = new Date();
+
+      const deadline = new Date(DEADLINE_ISO);
+      const diffUser = deadline - now;
+
+      const banner = document.getElementById('lockBanner');
+      const dot = document.getElementById('lockDot');
+      const msg = document.getElementById('lockMessage');
+      const cdown = document.getElementById('lockCountdown');
+
+      if (diffUser <= 0) {
+        isLocked = true;
+        banner.className = "rounded-xl border p-3 text-xs flex items-center justify-between transition-colors bg-red-950/40 border-red-500/40";
+        dot.className = "w-2.5 h-2.5 rounded-full bg-red-500";
+        msg.textContent = "🔒 Predictions locked! The ceremony has begun.";
+        cdown.textContent = "LOCKED";
+
+        document.getElementById('btnSave').disabled = true;
+        document.getElementById('btnSave').className = "w-full py-3 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs uppercase tracking-wider cursor-not-allowed";
+        document.getElementById('btnSave').textContent = "Submissions Closed";
+        document.getElementById('btnClear').classList.add('hidden');
+        document.getElementById('kopaPicker').disabled = true;
+        document.getElementById('yashinPicker').disabled = true;
+      } else {
+        isLocked = false;
+        banner.className = "rounded-xl border p-3 text-xs flex items-center justify-between transition-colors bg-slate-900/60 border-slate-800";
+        dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+        msg.textContent = `⏳ Predictions open until ${deadline.toLocaleDateString('en-GB')} at ${deadline.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})} (Paris time)`;
+        
+        const hours = Math.floor(diffUser / (1000 * 60 * 60));
+        const minutes = Math.floor((diffUser % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diffUser % (1000 * 60)) / 1000);
+        cdown.textContent = `${hours}h ${minutes}m ${seconds}s`;
+      }
+
+      const adminUnlock = new Date(ADMIN_UNLOCK_ISO);
+      const diffAdmin = adminUnlock - now;
+      const btnAdmin = document.getElementById('btnOpenAdmin');
+
+      if (diffAdmin > 0) {
+        isAdminUnlocked = false;
+        btnAdmin.className = "px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-500 text-xs flex items-center gap-1.5 cursor-not-allowed opacity-75";
+        const dHours = Math.floor(diffAdmin / (1000 * 60 * 60));
+        const dMins = Math.floor((diffAdmin % (1000 * 60 * 60)) / (1000 * 60));
+        btnAdmin.innerHTML = `<i data-lucide="lock" class="w-3.5 h-3.5"></i> Admin locked (available at 23:00 — in ${dHours}h ${dMins}m)`;
+      } else {
+        isAdminUnlocked = true;
+        btnAdmin.className = "px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 text-xs flex items-center gap-1.5 transition";
+        btnAdmin.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span><i data-lucide="sliders" class="w-3.5 h-3.5"></i> Live Ceremony (Admin)`;
+      }
+      lucide.createIcons();
+    }
+
+    async function loadLeagueDataFromSupabase() {
+      try {
+        const { data: preds, error: pErr } = await db.from('bdo_predictions')
+          .select('*')
+          .eq('league_id', currentLeague.id);
+        
+        if (pErr) throw pErr;
+
+        leaguePredictions = {};
+        (preds || []).forEach(r => {
+          leaguePredictions[r.username] = {
+            top10: r.top10 || [],
+            kopa: r.kopa || "",
+            yashin: r.yashin || ""
+          };
+        });
+
+        const { data: off, error: oErr } = await db.from('bdo_official_results').select('*').eq('id', 'current').maybeSingle();
+        if (oErr) throw oErr;
+
+        if (off) {
+          officialResults = {
+            top10: off.top10 || [],
+            kopa: off.kopa || "",
+            yashin: off.yashin || ""
+          };
+        }
+
+        renderTop10();
+        renderNominees();
+        loadUserTrophies();
+        updateLeaderboard();
+        renderFriendsPicks();
+      } catch (err) {
+        console.error("Supabase sync error:", err);
+      }
+    }
+
+    async function savePrediction() {
+      if (isLocked) {
+        alert("Predictions are locked!");
+        return;
+      }
+
+      const myData = getMyData();
+      myData.kopa = document.getElementById('kopaPicker').value;
+      myData.yashin = document.getElementById('yashinPicker').value;
+
+      if (myData.top10.length !== 10) {
+        alert("Please select exactly 10 players to complete your Top 10!");
+        return;
+      }
+
+      const saveBtn = document.getElementById('btnSave');
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Saving...";
+
+      const { error } = await db.from('bdo_predictions').upsert({
+        league_id: currentLeague.id,
+        username: currentUser,
+        top10: myData.top10,
+        kopa: myData.kopa,
+        yashin: myData.yashin,
+        updated_at: new Date().toISOString()
+      });
+
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save My Prediction Online";
+
+      if (error) {
+        alert("Error: " + error.message);
+      } else {
+        alert(`Prediction for ${currentUser} saved successfully!`);
+        await loadLeagueDataFromSupabase();
+      }
+    }
+
+    function renderTop10() {
+      const myData = getMyData();
+      const container = document.getElementById('top10List');
+      container.innerHTML = "";
+
+      for (let i = 0; i < 10; i++) {
+        const playerName = myData.top10[i];
+        const slot = document.createElement('div');
+        
+        slot.className = `p-2 rounded-lg border flex items-center justify-between text-xs transition select-none ${
+          playerName 
+            ? 'bg-slate-900 border-slate-700 text-white hover:border-amber-500/40' 
+            : 'border-dashed border-slate-800 bg-slate-950/40 text-slate-500'
+        }`;
+
+        if (!isLocked && playerName) {
+          slot.draggable = true;
+          slot.ondragstart = (e) => {
+            draggedIndex = i;
+            e.dataTransfer.effectAllowed = 'move';
+            slot.classList.add('opacity-40');
+          };
+          slot.ondragend = () => {
+            draggedIndex = null;
+            renderTop10();
+          };
+        }
+
+        if (!isLocked) {
+          slot.ondragover = (e) => {
+            e.preventDefault();
+            slot.classList.add('drag-over');
+          };
+          slot.ondragleave = () => {
+            slot.classList.remove('drag-over');
+          };
+          slot.ondrop = (e) => {
+            e.preventDefault();
+            slot.classList.remove('drag-over');
+            if (draggedIndex !== null && draggedIndex !== i) {
+              movePlayer(draggedIndex, i);
+            }
+          };
+        }
+
+        slot.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0">
+            ${(playerName && !isLocked) ? `
+              <span class="cursor-grab active:cursor-grabbing text-slate-500 hover:text-amber-400 px-0.5" title="Drag to reorder">
+                <i data-lucide="grip-vertical" class="w-3.5 h-3.5"></i>
+              </span>
+            ` : ''}
+            <span class="w-5 h-5 flex items-center justify-center font-bold text-[11px] ${i === 0 ? 'text-amber-400 font-black' : 'text-slate-400'}">
+              ${i + 1}.
+            </span>
+            <span class="truncate font-medium">${playerName ? playerName : '<span class="text-slate-500 italic">Empty slot</span>'}</span>
+          </div>
+
+          ${(playerName && !isLocked) ? `
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <button onclick="shiftPlayer(${i}, -1)" class="p-1 text-slate-500 hover:text-amber-300 rounded hover:bg-slate-800 ${i === 0 ? 'opacity-20 cursor-not-allowed' : ''}" ${i === 0 ? 'disabled' : ''} title="Move up">
+                <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="shiftPlayer(${i}, 1)" class="p-1 text-slate-500 hover:text-amber-300 rounded hover:bg-slate-800 ${i === myData.top10.length - 1 ? 'opacity-20 cursor-not-allowed' : ''}" ${i === myData.top10.length - 1 ? 'disabled' : ''} title="Move down">
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="removePlayer('${playerName}')" class="p-1 text-slate-500 hover:text-red-400 rounded hover:bg-slate-800 ml-1" title="Remove">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          ` : ''}
+        `;
+        container.appendChild(slot);
+      }
+      lucide.createIcons();
+    }
+
+    function movePlayer(fromIndex, toIndex) {
+      if (isLocked) return;
+      const myData = getMyData();
+      if (!myData.top10[fromIndex]) return;
+
+      const player = myData.top10.splice(fromIndex, 1)[0];
+      if (toIndex >= myData.top10.length) {
+        myData.top10.push(player);
+      } else {
+        myData.top10.splice(toIndex, 0, player);
+      }
+
+      renderTop10();
+      renderNominees(document.getElementById('searchNominee').value);
+    }
+
+    function shiftPlayer(index, direction) {
+      if (isLocked) return;
+      const target = index + direction;
+      const myData = getMyData();
+      if (target < 0 || target >= myData.top10.length) return;
+
+      const temp = myData.top10[index];
+      myData.top10[index] = myData.top10[target];
+      myData.top10[target] = temp;
+
+      renderTop10();
+      renderNominees(document.getElementById('searchNominee').value);
+    }
+
+    function renderNominees(filter = "") {
+      const myData = getMyData();
+      const container = document.getElementById('nomineesContainer');
+      container.innerHTML = "";
+
+      const query = filter.toLowerCase();
+      const filtered = NOMINEES.filter(name => name.toLowerCase().includes(query));
+
+      filtered.forEach(name => {
+        const isSelected = myData.top10.includes(name);
+        const div = document.createElement('div');
+        div.className = `p-2 rounded border text-xs flex justify-between items-center transition ${
+          isLocked ? 'cursor-not-allowed opacity-60 bg-slate-950 border-slate-900' :
+          isSelected 
+            ? 'bg-amber-950/20 border-amber-500/40 text-amber-200 opacity-50 pointer-events-none' 
+            : 'bg-slate-950 border-slate-800 hover:border-slate-600 hover:bg-slate-900 cursor-pointer'
+        }`;
+        if (!isLocked) div.onclick = () => addPlayer(name);
+        div.innerHTML = `
+          <span>${name}</span>
+          ${isSelected ? `<span class="text-[10px] font-mono bg-amber-400/20 text-amber-300 px-1.5 rounded">#${myData.top10.indexOf(name) + 1}</span>` : `<span class="text-slate-500">+</span>`}
+        `;
+        container.appendChild(div);
+      });
+
+      document.getElementById('dispoBadge').textContent = `${30 - myData.top10.length} left`;
+    }
+
+    function addPlayer(name) {
+      if (isLocked) return;
+      if (!leaguePredictions[currentUser]) leaguePredictions[currentUser] = { top10: [], kopa: "", yashin: "" };
+      const myData = leaguePredictions[currentUser];
+      if (myData.top10.length >= 10 || myData.top10.includes(name)) return;
+      myData.top10.push(name);
+      renderTop10();
+      renderNominees(document.getElementById('searchNominee').value);
+    }
+
+    function removePlayer(name) {
+      if (isLocked) return;
+      const myData = getMyData();
+      myData.top10 = myData.top10.filter(n => n !== name);
+      renderTop10();
+      renderNominees(document.getElementById('searchNominee').value);
+    }
+
+    function clearMyTop10() {
+      if (isLocked) return;
+      if (confirm("Clear your Top 10?")) {
+        const myData = getMyData();
+        myData.top10 = [];
+        renderTop10();
+        renderNominees(document.getElementById('searchNominee').value);
+      }
+    }
+
+    function updateLeaderboard() {
+      const tbody = document.getElementById('leaderboardRows');
+      tbody.innerHTML = "";
+
+      const revealedCount = (officialResults.top10 || []).filter(x => x && x.trim() !== "").length;
+      document.getElementById('officialCountText').textContent = `${revealedCount} / 10 revealed`;
+
+      const scores = currentLeague.members.map(u => {
+        const uData = leaguePredictions[u] || { top10: [], kopa: "", yashin: "" };
+        let points = 0;
+        let exact = 0;
+
+        (uData.top10 || []).forEach((player, idx) => {
+          const officialIdx = (officialResults.top10 || []).indexOf(player);
+          if (officialIdx !== -1) {
+            const diff = Math.abs(officialIdx - idx);
+            if (diff === 0) { points += 10; exact++; }
+            else if (diff === 1) { points += 5; }
+            else { points += 2; }
+          }
+        });
+
+        let bonus = 0;
+        if (officialResults.kopa && uData.kopa === officialResults.kopa) bonus += 5;
+        if (officialResults.yashin && uData.yashin === officialResults.yashin) bonus += 5;
+
+        return { 
+          user: u, 
+          points: points + bonus, 
+          exact, 
+          bonus,
+          hasVoted: (uData.top10 || []).length === 10 
+        };
+      }).sort((a, b) => b.points - a.points);
+
+      scores.forEach((s, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = s.user === currentUser ? 'bg-amber-950/20 font-medium' : '';
+        tr.innerHTML = `
+          <td class="p-3.5 font-mono font-bold ${idx === 0 ? 'text-amber-400' : 'text-slate-400'}">#${idx + 1}</td>
+          <td class="p-3.5 font-semibold ${s.user === currentUser ? 'text-amber-300' : ''}">
+            ${s.user} ${!s.hasVoted ? '<span class="text-[10px] text-red-400 italic">(incomplete)</span>' : ''}
+          </td>
+          <td class="p-3.5 text-center text-slate-300 font-mono">${s.exact} / 10</td>
+          <td class="p-3.5 text-center text-slate-300 font-mono">+${s.bonus} pts</td>
+          <td class="p-3.5 text-right font-mono font-bold text-amber-400 text-sm">${s.points} pts</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderFriendsPicks(filterUser = "ALL") {
+      const container = document.getElementById('friendsPicksContainer');
+      container.innerHTML = "";
+
+      const usersToRender = filterUser === "ALL" ? currentLeague.members : [filterUser];
+
+      usersToRender.forEach(user => {
+        const data = leaguePredictions[user] || { top10: [], kopa: "", yashin: "" };
+        const card = document.createElement('div');
+        const isMe = user === currentUser;
+        card.className = `bg-slate-900/60 border ${isMe ? 'border-amber-500/40' : 'border-slate-800'} rounded-xl p-4 text-xs space-y-3 shadow-lg`;
+        
+        let picksHtml = '<ol class="space-y-1.5 list-decimal list-inside text-slate-300">';
+        for (let i = 0; i < 10; i++) {
+          const p = data.top10[i];
+          const isExact = officialResults.top10 && officialResults.top10[i] && officialResults.top10[i] === p;
+          const isPlaced = p && officialResults.top10 && officialResults.top10.includes(p);
+          
+          let badge = '';
+          if (isExact) {
+            badge = '<span class="float-right text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">+10</span>';
+          } else if (isPlaced) {
+            badge = '<span class="float-right text-[10px] font-medium text-amber-400/80 bg-amber-950/40 px-1.5 py-0.5 rounded">placed</span>';
+          }
+
+          picksHtml += `
+            <li class="py-1 px-1.5 rounded border border-transparent ${isExact ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200 font-semibold' : 'hover:bg-slate-950/50'}">
+              <span class="font-normal ${p ? 'text-slate-200' : 'text-slate-600'}">${p || '— not selected —'}</span>
+              ${badge}
+            </li>
+          `;
+        }
+        picksHtml += '</ol>';
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2 font-bold">
+            <div class="flex items-center gap-2">
+              <span class="${isMe ? 'text-amber-300' : 'text-slate-200'} text-sm">${user}</span>
+              ${isMe ? '<span class="text-[9px] bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded uppercase">Me</span>' : ''}
+            </div>
+            <span class="text-[10px] ${data.top10.length === 10 ? 'text-emerald-400 bg-emerald-950/50' : 'text-red-400 bg-red-950/50'} px-2 py-0.5 rounded-full font-mono">
+              ${data.top10.length}/10 chosen
+            </span>
+          </div>
+
+          ${picksHtml}
+
+          <div class="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-1 bg-slate-950/40 p-2 rounded-lg">
+            <div class="flex justify-between items-center">
+              <span>Kopa Trophy:</span>
+              <b class="text-slate-200 ${officialResults.kopa && officialResults.kopa === data.kopa ? 'text-emerald-400' : ''}">${data.kopa || '—'}</b>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>Yashin Trophy:</span>
+              <b class="text-slate-200 ${officialResults.yashin && officialResults.yashin === data.yashin ? 'text-emerald-400' : ''}">${data.yashin || '—'}</b>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    function setTab(tab) {
+      document.getElementById('tabProno').classList.toggle('hidden', tab !== 'prono');
+      document.getElementById('tabScores').classList.toggle('hidden', tab !== 'scores');
+      document.getElementById('tabPicks').classList.toggle('hidden', tab !== 'picks');
+
+      document.getElementById('btnTabProno').className = tab === 'prono' ? 'text-amber-400 border-b-2 border-amber-400 pb-1 flex items-center gap-1.5 whitespace-nowrap' : 'text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5 whitespace-nowrap';
+      document.getElementById('btnTabScores').className = tab === 'scores' ? 'text-amber-400 border-b-2 border-amber-400 pb-1 flex items-center gap-1.5 whitespace-nowrap' : 'text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5 whitespace-nowrap';
+      document.getElementById('btnTabPicks').className = tab === 'picks' ? 'text-amber-400 border-b-2 border-amber-400 pb-1 flex items-center gap-1.5 whitespace-nowrap' : 'text-slate-400 hover:text-slate-200 pb-1 flex items-center gap-1.5 whitespace-nowrap';
+
+      if (tab === 'picks') {
+        const filterVal = document.getElementById('friendViewFilter').value;
+        renderFriendsPicks(filterVal);
+      }
+      lucide.createIcons();
+    }
+
+    function renderAdminSlots() {
+      const container = document.getElementById('adminSlotsContainer');
+      container.innerHTML = "";
+
+      for (let i = 0; i < 10; i++) {
+        const currentVal = officialResults.top10[i] || "";
+        const div = document.createElement('div');
+        div.className = "flex items-center gap-2 text-xs";
+        div.innerHTML = `
+          <span class="w-8 font-mono font-bold text-slate-400 text-right">#${i + 1}:</span>
+          <select id="admin_slot_${i}" class="flex-1 bg-slate-950 border border-slate-800 rounded p-1.5 text-slate-200 outline-none focus:border-amber-400">
+            <option value="">(Not yet announced)</option>
+            ${NOMINEES.map(n => `<option value="${n}" ${n === currentVal ? 'selected' : ''}>${n}</option>`).join('')}
+          </select>
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    function openAdminModal() {
+      if (!isAdminUnlocked) {
+        const unlockDate = new Date(ADMIN_UNLOCK_ISO);
+        alert(`Admin results entry is locked until ${unlockDate.toLocaleDateString('en-GB')} at ${unlockDate.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})} (Paris time).`);
+        return;
+      }
+
+      renderAdminSlots();
+      document.getElementById('adminKopaSelect').value = officialResults.kopa || "";
+      document.getElementById('adminYashinSelect').value = officialResults.yashin || "";
+      document.getElementById('adminModal').classList.remove('hidden');
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.add('hidden');
+    }
+
+    async function applyOfficialResults() {
+      if (!isAdminUnlocked) {
+        alert("Action restricted: Entry is locked until 23:00.");
+        return;
+      }
+
+      const newTop10 = [];
+      for (let i = 0; i < 10; i++) {
+        const val = document.getElementById(`admin_slot_${i}`).value;
+        newTop10.push(val);
+      }
+
+      officialResults.top10 = newTop10;
+      officialResults.kopa = document.getElementById('adminKopaSelect').value;
+      officialResults.yashin = document.getElementById('adminYashinSelect').value;
+
+      const { error } = await db.from('bdo_official_results').upsert({
+        id: 'current',
+        top10: officialResults.top10,
+        kopa: officialResults.kopa,
+        yashin: officialResults.yashin,
+        updated_at: new Date().toISOString()
+      });
+
+      if (error) {
+        alert("Error publishing results: " + error.message);
+      } else {
+        alert("Official results published! Standings updated across all leagues.");
+        closeAdminModal();
+        await loadLeagueDataFromSupabase();
+      }
+    }
+
+    async function resetOfficialResults() {
+      if (!isAdminUnlocked) return;
+      if (confirm("Reset all official ceremony results?")) {
+        officialResults = { top10: [], kopa: "", yashin: "" };
+        await db.from('bdo_official_results').upsert({
+          id: 'current',
+          top10: [],
+          kopa: "",
+          yashin: "",
+          updated_at: new Date().toISOString()
+        });
+        renderAdminSlots();
+        closeAdminModal();
+        await loadLeagueDataFromSupabase();
+      }
+    }
+  </script>
+</body>
+</html>
