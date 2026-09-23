@@ -390,15 +390,23 @@
       const targetCode = (urlCode || savedCode || '').toUpperCase().trim();
       const matched = LEAGUES.find(l => l.code === targetCode);
 
+      const gateScreen = document.getElementById('gateScreen');
+      const appScreen = document.getElementById('appScreen');
+
       if (matched) {
         currentLeague = matched;
         localStorage.setItem('bdo_authenticated_code', matched.code);
-        document.getElementById('gateScreen').classList.add('hidden');
+        gateScreen.classList.add('hidden');
+        appScreen.classList.remove('hidden');
         bootApp();
       } else {
-        document.getElementById('gateScreen').classList.remove('hidden');
+        // Nettoie la mémoire corrompue
+        localStorage.removeItem('bdo_authenticated_code');
+        currentLeague = null;
+        appScreen.classList.add('hidden');
+        gateScreen.classList.remove('hidden');
       }
-    }
+     }
 
     function submitGateCode() {
       const inputVal = document.getElementById('gateCodeInput').value.toUpperCase().trim();
@@ -419,10 +427,10 @@
     function leaveLeague() {
       if (confirm("Quitter cette ligue ? Tu devras réutiliser ton lien ou entrer ton code.")) {
         localStorage.removeItem('bdo_authenticated_code');
-        window.location.href = window.location.pathname;
+        window.location.href = window.location.origin + window.location.pathname;
       }
     }
-
+    
     async function bootApp() {
       currentUser = localStorage.getItem(`bdo_user_${currentLeague.id}`) || currentLeague.members[0];
       if (!currentLeague.members.includes(currentUser)) currentUser = currentLeague.members[0];
