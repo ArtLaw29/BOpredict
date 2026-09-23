@@ -414,11 +414,16 @@
       const matched = LEAGUES.find(l => l.code === inputVal);
       const err = document.getElementById('gateError');
 
-      if (matched) {
+    if (matched) {
         err.classList.add('hidden');
         currentLeague = matched;
         localStorage.setItem('bdo_authenticated_code', matched.code);
+        
+        // On masque l'écran de code
         document.getElementById('gateScreen').classList.add('hidden');
+        // ET on affiche l'application principale (la ligne qui manquait)
+        document.getElementById('appScreen').classList.remove('hidden');
+        
         bootApp();
       } else {
         err.classList.remove('hidden');
